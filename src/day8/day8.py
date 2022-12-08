@@ -1,5 +1,4 @@
 TEST = False
-import timeit
 
 def process_grid_input(input):
     grid = []
@@ -9,83 +8,24 @@ def process_grid_input(input):
     return grid
 
 ### Part 1: Visibility
-def visible_north(grid, tree_y, tree_x):
-    # when looking north, we look at the trees for 0 -> tree_y
-    for y in range(0, tree_y):
-        if grid[y][tree_x] >= grid[tree_y][tree_x]:
+def is_visible(grid: list, tree_y: int, tree_x: int, loop_range: list, NS: bool):
+    for index in range(loop_range[0], loop_range[1]):
+        if grid[index if NS else tree_y][index if not NS else tree_x] >= grid[tree_y][tree_x]:
             return False
-    return True        
+    return True 
 
-def visible_west(grid, tree_y, tree_x):
-    # when looking west, we look at the trees for 0 -> tree_x
-    for x in range(0, tree_x):
-        if grid[tree_y][x] >= grid[tree_y][tree_x]:
-            return False
-    return True        
-
-def visible_south(grid, tree_y, tree_x):
-    # when looking south, we look at the trees from tree_y -> end of grid y
-    for y in range(tree_y+1, len(grid)):
-        if grid[y][tree_x] >= grid[tree_y][tree_x]:
-            return False
-    return True        
-
-def visible_east(grid, tree_y, tree_x):
-    # when looking east, we look at the trees from tree_x -> end of grid x
-    for x in range(tree_x+1, len(grid[tree_y])):
-        if grid[tree_y][x] >= grid[tree_y][tree_x]:
-            return False
-    return True     
-
-### Part 2: Scenic Multiplier
-def scenic_north(grid, tree_y, tree_x):
+### Part 2: Scenic Multiplier 
+def scenic_score(grid: list, tree_y: int, tree_x: int, loop_range: list, NS: bool, step=1):
     score = 0
-    # when looking north, we look at the trees from tree_y -> 0
-    for y in range(tree_y-1, -1, -1):
+    for index in range(loop_range[0], loop_range[1], loop_range[2]):
         current_tree = grid[tree_y][tree_x]
-        if grid[y][tree_x] < current_tree:
+        adj_tree = grid[index if NS else tree_y][index if not NS else tree_x]
+        if adj_tree < current_tree:
             score = score + 1
-        elif grid[y][tree_x] >= current_tree:
+        elif adj_tree >= current_tree:
             score = score + 1
             return score
-    return score       
-
-def scenic_west(grid, tree_y, tree_x):
-    score = 0
-    # when looking west, we look at the trees from tree_x -> 0
-    for x in range(tree_x-1, -1, -1):
-        current_tree = grid[tree_y][tree_x]
-        if grid[tree_y][x] < current_tree:
-            score = score + 1
-        elif grid[tree_y][x] >= current_tree:
-            score = score + 1
-            return score
-    return score         
-
-def scenic_south(grid, tree_y, tree_x):
-    score = 0
-    # when looking south, we look at the trees from tree_y -> end of grid y
-    for y in range(tree_y+1, len(grid)):
-        current_tree = grid[tree_y][tree_x]
-        if grid[y][tree_x] < current_tree:
-            score = score + 1
-        elif grid[y][tree_x] >= current_tree:
-            score = score + 1
-            return score
-    return score     
-
-def scenic_east(grid, tree_y, tree_x):
-    score = 0
-    # when looking east, we look at the trees from tree_x -> end of grid x
-    for x in range(tree_x+1, len(grid[tree_y])):
-        current_tree = grid[tree_y][tree_x]
-        if grid[tree_y][x] < current_tree:
-            score = score + 1
-        elif grid[tree_y][x] >= current_tree:
-            score = score + 1
-            return score
-    return score     
-
+    return score
 
 def get_visible_and_scenic(grid):
     exterior_visible = (len(grid)*2) + ((len(grid)-2)*2)
@@ -95,10 +35,22 @@ def get_visible_and_scenic(grid):
     for y in range(1, len(grid)-1):
         for x in range(1, len(grid[y])-1):
             ### Part 1
-            if visible_north(grid, y, x) or visible_east(grid, y, x) or visible_south(grid, y, x) or visible_west(grid, y, x):
+            north_visible = is_visible(grid, y, x, [0, y], True)
+            south_visible = is_visible(grid, y, x, [y+1, len(grid)], True)
+            east_visible = is_visible(grid, y, x, [x+1, len(grid[y])], False)
+            west_visible = is_visible(grid, y, x, [0, x], False)
+
+            if north_visible or south_visible or east_visible or west_visible:
                 interior_visible = interior_visible + 1
+
             ### Part 2
-            current_tree_score = scenic_north(grid, y, x) * scenic_south(grid, y, x) * scenic_east(grid, y, x) * scenic_west(grid, y, x)
+            north_score = scenic_score(grid, y, x, [y-1, -1, -1], True)
+            south_score = scenic_score(grid, y, x, [y+1, len(grid[y]), 1], True)
+            east_score = scenic_score(grid, y, x, [x+1, len(grid[y]), 1], False)
+            west_score = scenic_score(grid, y, x, [x-1, -1, -1], False)
+            
+            current_tree_score = north_score * south_score * east_score * west_score
+
             if current_tree_score > highest_scenic_score:
                 highest_scenic_score = current_tree_score
 
